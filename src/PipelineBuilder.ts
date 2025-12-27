@@ -33,6 +33,13 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
     private validator?: IPipelineValidator<TIn, TOut>;
 
     /**
+     * Gets the steps in the pipeline for validation purposes.
+     */
+    public getSteps(): IPipelineStep<TIn, TOut>[] {
+        return [...this.steps]; // Return a copy to prevent external modification
+    }
+
+    /**
      * Attaches a context to the pipeline. The context holds the input data, output data, and other state
      * that is passed between pipes in the pipeline.
      */

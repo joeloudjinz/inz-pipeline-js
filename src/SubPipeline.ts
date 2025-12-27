@@ -2,6 +2,7 @@ import { ISubPipeline } from './contracts/ISubPipeline';
 import { IPipelineContext } from './contracts/IPipelineContext';
 import { IPipe } from './contracts/IPipe';
 import { PipelineBuilder } from './PipelineBuilder';
+import {IPipelineStep} from "./contracts/IPipelineStep";
 
 /**
  * Represents a sub-pipeline that can be executed as part of a parent pipeline.
@@ -33,14 +34,15 @@ export class SubPipeline<TIn, TOut> implements ISubPipeline<TIn, TOut> {
    * Gets the pipes that are part of this sub-pipeline for validation purposes.
    */
   public getPipes(): IPipe<TIn, TOut>[] {
-    // Access the protected steps property from the PipelineBuilder
-    return (this.subPipelineBuilder as any).steps?.flatMap(this.extractPipesFromStep) || [];
+    // Get the steps from the sub-pipeline builder using the public getter
+    const steps = this.subPipelineBuilder.getSteps();
+    return steps.flatMap(step => this.extractPipesFromStep(step));
   }
 
   /**
    * Extracts pipes from a pipeline step, handling different step types.
    */
-  private extractPipesFromStep(step: any): IPipe<TIn, TOut>[] {
+  private extractPipesFromStep(step: IPipelineStep<TIn, TOut>): IPipe<TIn, TOut>[] {
     if (step && typeof step.getPipes === 'function') {
       return step.getPipes();
     }
