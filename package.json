@@ -8,10 +8,10 @@
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
+    "build:test": "",
     "lint": "eslint src/**/*.ts",
-    "prepublishOnly": "npm run build",
     "prebuild": "rm -rf dist",
-    "example": "npm run build && node example.js"
+    "test-build": "npx ts-node test-build.ts"
   },
   "keywords": [
     "pipeline",

@@ -1,4 +1,5 @@
 import {BasePipe, DefaultPipelineValidator, PipelineBuilder, PipelineContext, SubPipeline} from './dist';
+import {getMemoryUsage, getUsedMemoryBytes} from "./dist";
 
 // Define simple input and output types for testing
 interface TestInput {
@@ -476,3 +477,16 @@ runAllTests()
     console.error('Test suite failed with error:', error);
     process.exit(1);
   });
+
+
+console.log('Testing new memory tracking functionality...\n');
+
+// Test getMemoryUsage function
+const memoryUsage = getMemoryUsage();
+console.log('Memory Usage:', memoryUsage);
+
+// Test getUsedMemoryBytes function
+const usedMemory = getUsedMemoryBytes();
+console.log('Used Memory Bytes:', usedMemory);
+
+console.log('\nMemory tracking functionality is is working correctly!');

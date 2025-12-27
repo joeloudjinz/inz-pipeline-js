@@ -38,6 +38,7 @@ export {ErrorHandlingOptions} from './configuration/ErrorHandlingOptions';
 // Models
 export {PerformanceMetrics} from './models/PerformanceMetrics';
 export {MemoryMetrics} from './models/MemoryMetrics';
+export {getMemoryUsage, getUsedMemoryBytes} from './utils/MemoryTracker';
 export {PipelineError} from './models/PipelineError';
 
 // Validation

@@ -153,6 +153,32 @@ export abstract class PipelineContext<TIn, TOut> implements IPipelineContext<TIn
             summary += `Peak Memory: ${this.formatBytes(memMetrics.peakMemoryBytes)}\n`;
             summary += `Allocated Bytes: ${this.formatBytes(memMetrics.allocatedBytes)}\n`;
             summary += `Memory Increase: ${this.formatBytes(memMetrics.memoryIncrease)}\n`;
+
+            // Add additional memory metrics if available
+            if (memMetrics.initialTotalHeapSizeBytes !== undefined) {
+                summary += `Initial Total Heap Size: ${this.formatBytes(memMetrics.initialTotalHeapSizeBytes)}\n`;
+            }
+            if (memMetrics.finalTotalHeapSizeBytes !== undefined) {
+                summary += `Final Total Heap Size: ${this.formatBytes(memMetrics.finalTotalHeapSizeBytes)}\n`;
+            }
+            if (memMetrics.heapSizeLimitBytes !== undefined) {
+                summary += `Heap Size Limit: ${this.formatBytes(memMetrics.heapSizeLimitBytes)}\n`;
+            }
+            if (memMetrics.initialUsedJSHeapSizeBytes !== undefined) {
+                summary += `Initial Used JS Heap Size: ${this.formatBytes(memMetrics.initialUsedJSHeapSizeBytes)}\n`;
+            }
+            if (memMetrics.finalUsedJSHeapSizeBytes !== undefined) {
+                summary += `Final Used JS Heap Size: ${this.formatBytes(memMetrics.finalUsedJSHeapSizeBytes)}\n`;
+            }
+            if (memMetrics.initialTotalJSHeapSizeBytes !== undefined) {
+                summary += `Initial Total JS Heap Size: ${this.formatBytes(memMetrics.initialTotalJSHeapSizeBytes)}\n`;
+            }
+            if (memMetrics.finalTotalJSHeapSizeBytes !== undefined) {
+                summary += `Final Total JS Heap Size: ${this.formatBytes(memMetrics.finalTotalJSHeapSizeBytes)}\n`;
+            }
+            if (memMetrics.jsHeapSizeLimitBytes !== undefined) {
+                summary += `JS Heap Size Limit: ${this.formatBytes(memMetrics.jsHeapSizeLimitBytes)}\n`;
+            }
         }
 
         if (this.performanceMetrics.pipeDurations && Object.keys(this.performanceMetrics.pipeDurations).length > 0) {

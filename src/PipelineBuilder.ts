@@ -19,6 +19,7 @@ import {CircuitBreakerStrategy} from './error-handling/CircuitBreakerStrategy';
 import {DefaultPipelineValidator} from './validation/DefaultPipelineValidator';
 import {PerformanceMetrics} from './models/PerformanceMetrics';
 import {MemoryMetrics} from './models/MemoryMetrics';
+import {getMemoryUsage} from './utils/MemoryTracker';
 
 /**
  * The PipelineBuilder is a fluent API class that orchestrates the execution of a pipeline of operations.
@@ -404,7 +405,21 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
             if (!this.context.performanceMetrics.memoryMetrics) {
                 this.context.performanceMetrics.memoryMetrics = new MemoryMetrics();
             }
-            this.context.performanceMetrics.memoryMetrics.initialMemoryBytes = this.getMemoryUsage();
+
+            const initialMemoryMetrics = getMemoryUsage();
+            this.context.performanceMetrics.memoryMetrics.initialMemoryBytes = initialMemoryMetrics.used || 0;
+
+            // Capture additional memory metrics if available
+            if (initialMemoryMetrics.total !== undefined) {
+                this.context.performanceMetrics.memoryMetrics.initialTotalHeapSizeBytes = initialMemoryMetrics.total;
+                this.context.performanceMetrics.memoryMetrics.initialTotalJSHeapSizeBytes = initialMemoryMetrics.total;
+            }
+
+            if (initialMemoryMetrics.limit !== undefined) {
+                this.context.performanceMetrics.memoryMetrics.heapSizeLimitBytes = initialMemoryMetrics.limit;
+                this.context.performanceMetrics.memoryMetrics.jsHeapSizeLimitBytes = initialMemoryMetrics.limit;
+            }
+
             if (!this.context.performanceMetrics.correlationId) {
                 this.context.performanceMetrics.correlationId = this.generateCorrelationId();
             }
@@ -437,7 +452,14 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
             this.context.performanceMetrics.totalDurationMs = totalDuration;
 
             if (this.context.performanceMetrics.memoryMetrics) {
-                this.context.performanceMetrics.memoryMetrics.finalMemoryBytes = this.getMemoryUsage();
+                const finalMemoryMetrics = getMemoryUsage();
+                this.context.performanceMetrics.memoryMetrics.finalMemoryBytes = finalMemoryMetrics.used || 0;
+
+                // Capture additional memory metrics if available
+                if (finalMemoryMetrics.total !== undefined) {
+                    this.context.performanceMetrics.memoryMetrics.finalTotalHeapSizeBytes = finalMemoryMetrics.total;
+                    this.context.performanceMetrics.memoryMetrics.finalTotalJSHeapSizeBytes = finalMemoryMetrics.total;
+                }
             }
         }
 
@@ -487,15 +509,6 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
      */
     private isSubPipelineStep(step: IPipelineStep<TIn, TOut>): step is SubPipelineStep<TIn, TOut> {
         return step instanceof SubPipelineStep;
-    }
-
-    private getMemoryUsage(): number {
-        // In a Node.js environment, we could use process.memoryUsage()
-        // For browser compatibility, we'll return 0 for now
-        if (typeof process !== 'undefined' && process.memoryUsage) {
-            return process.memoryUsage().heapUsed;
-        }
-        return 0;
     }
 
     private generateCorrelationId(): string {
