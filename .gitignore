@@ -40,7 +40,6 @@ bower_components/
 build/Release/
 
 # TypeScript v1, mostly unnecessary with v2
-tsconfig.json
 typings/
 
 # Optional npm cache directory
