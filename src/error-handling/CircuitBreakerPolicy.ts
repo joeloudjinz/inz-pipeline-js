@@ -1,112 +1,112 @@
-import { IErrorHandlingPolicy } from '../contracts/IErrorHandlingPolicy';
-import { IPipe } from '../contracts/IPipe';
-import { IPipelineContext } from '../contracts/IPipelineContext';
-import { ErrorHandlingUtils } from './ErrorHandlingUtils';
-import { ErrorHandlingConstants } from './ErrorHandlingConstants';
+import {IErrorHandlingPolicy} from '../contracts/IErrorHandlingPolicy';
+import {IPipe} from '../contracts/IPipe';
+import {IPipelineContext} from '../contracts/IPipelineContext';
+import {ErrorHandlingUtils} from './ErrorHandlingUtils';
+import {ErrorHandlingConstants} from './ErrorHandlingConstants';
 
 /**
  * Represents the state of the circuit breaker.
  */
 enum CircuitState {
-  Closed = 'Closed',    // Normal operation
-  Open = 'Open',        // Tripped, requests blocked
-  HalfOpen = 'HalfOpen' // Testing if failure condition is resolved
+    Closed = 'Closed',    // Normal operation
+    Open = 'Open',        // Tripped, requests blocked
+    HalfOpen = 'HalfOpen' // Testing if failure condition is resolved
 }
 
 /**
  * Implements a circuit breaker policy to prevent repeated failures.
  */
 export class CircuitBreakerPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
-  private state: CircuitState = CircuitState.Closed;
-  private failureCount: number = 0;
-  private lastFailureTime?: number;
-  
-  private readonly failureThreshold: number;
-  private readonly timeout: number;
-  private readonly shouldHandle?: (error: Error) => boolean;
+    private state: CircuitState = CircuitState.Closed;
+    private failureCount: number = 0;
+    private lastFailureTime?: number;
 
-  /**
-   * Initializes a new instance of the CircuitBreakerPolicy class.
-   */
-  constructor(
-    failureThreshold: number = 5,
-    timeout: number = 60000, // 1 minute default
-    shouldHandle?: (error: Error) => boolean
-  ) {
-    this.failureThreshold = failureThreshold > 0 ? failureThreshold : 5;
-    this.timeout = timeout > 0 ? timeout : 60000;
-    this.shouldHandle = shouldHandle;
-  }
+    private readonly failureThreshold: number;
+    private readonly timeout: number;
+    private readonly shouldHandle?: (error: Error) => boolean;
 
-  public async execute(
-    pipe: IPipe<TIn, TOut>,
-    context: IPipelineContext<TIn, TOut>,
-    cancellationToken?: AbortSignal
-  ): Promise<void> {
-    // Check for cancellation before proceeding
-    ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
-
-    // Check if circuit is open and timeout has not elapsed
-    if (this.state === CircuitState.Open) {
-      if (this.lastFailureTime && (Date.now() - this.lastFailureTime) < this.timeout) {
-        // Circuit is still open, fail fast
-        const error = new Error(`Circuit breaker is OPEN. Request rejected for pipe ${pipe.constructor.name}`);
-        ErrorHandlingUtils.addErrorToContext(context, error, pipe, ErrorHandlingConstants.CIRCUIT_BREAKER_OPEN);
-        throw error;
-      } else {
-        // Timeout has elapsed, move to half-open state to test
-        this.state = CircuitState.HalfOpen;
-      }
+    /**
+     * Initializes a new instance of the CircuitBreakerPolicy class.
+     */
+    constructor(
+        failureThreshold: number = 5,
+        timeout: number = 60000, // 1 minute default
+        shouldHandle?: (error: Error) => boolean
+    ) {
+        this.failureThreshold = failureThreshold > 0 ? failureThreshold : 5;
+        this.timeout = timeout > 0 ? timeout : 60000;
+        this.shouldHandle = shouldHandle;
     }
 
-    try {
-      // Execute the pipe
-      await pipe.handle(context, cancellationToken);
+    public async execute(
+        pipe: IPipe<TIn, TOut>,
+        context: IPipelineContext<TIn, TOut>,
+        cancellationToken?: AbortSignal
+    ): Promise<void> {
+        // Check for cancellation before proceeding
+        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
 
-      // If successful and in half-open state, reset the circuit
-      if (this.state === CircuitState.HalfOpen) {
-        this.resetCircuit();
-      }
-    } catch (error) {
-      const typedError = error as Error;
+        // Check if circuit is open and timeout has not elapsed
+        if (this.state === CircuitState.Open) {
+            if (this.lastFailureTime && (Date.now() - this.lastFailureTime) < this.timeout) {
+                // Circuit is still open, fail fast
+                const error = new Error(`Circuit breaker is OPEN. Request rejected for pipe ${pipe.constructor.name}`);
+                ErrorHandlingUtils.addErrorToContext(context, error, pipe, ErrorHandlingConstants.CIRCUIT_BREAKER_OPEN);
+                throw error;
+            } else {
+                // Timeout has elapsed, move to half-open state to test
+                this.state = CircuitState.HalfOpen;
+            }
+        }
 
-      // Check if this error should trigger the circuit breaker
-      if (this.shouldHandle && !this.shouldHandle(typedError)) {
-        // This error should not trigger the circuit breaker, re-throw directly
-        ErrorHandlingUtils.addErrorToContext(context, typedError, pipe, ErrorHandlingConstants.NON_CIRCUIT_BREAKER_ERROR);
-        throw typedError;
-      }
+        try {
+            // Execute the pipe
+            await pipe.handle(context, cancellationToken);
 
-      // Increment failure count and update circuit state
-      this.failureCount++;
-      this.lastFailureTime = Date.now();
+            // If successful and in half-open state, reset the circuit
+            if (this.state === CircuitState.HalfOpen) {
+                this.resetCircuit();
+            }
+        } catch (error) {
+            const typedError = error as Error;
 
-      if (this.failureCount >= this.failureThreshold) {
-        this.state = CircuitState.Open;
-        console.warn(`Circuit breaker OPENED for pipe ${pipe.constructor.name} after ${this.failureCount} failures`);
-      }
+            // Check if this error should trigger the circuit breaker
+            if (this.shouldHandle && !this.shouldHandle(typedError)) {
+                // This error should not trigger the circuit breaker, re-throw directly
+                ErrorHandlingUtils.addErrorToContext(context, typedError, pipe, ErrorHandlingConstants.NON_CIRCUIT_BREAKER_ERROR);
+                throw typedError;
+            }
 
-      // Add error to context
-      ErrorHandlingUtils.addErrorToContext(context, typedError, pipe, ErrorHandlingConstants.CIRCUIT_BREAKER_FAILURE);
+            // Increment failure count and update circuit state
+            this.failureCount++;
+            this.lastFailureTime = Date.now();
 
-      throw typedError;
+            if (this.failureCount >= this.failureThreshold) {
+                this.state = CircuitState.Open;
+                console.warn(`Circuit breaker OPENED for pipe ${pipe.constructor.name} after ${this.failureCount} failures`);
+            }
+
+            // Add error to context
+            ErrorHandlingUtils.addErrorToContext(context, typedError, pipe, ErrorHandlingConstants.CIRCUIT_BREAKER_FAILURE);
+
+            throw typedError;
+        }
     }
-  }
 
-  /**
-   * Resets the circuit breaker to closed state.
-   */
-  private resetCircuit(): void {
-    this.state = CircuitState.Closed;
-    this.failureCount = 0;
-    this.lastFailureTime = undefined;
-    console.info('Circuit breaker RESET to CLOSED state');
-  }
+    /**
+     * Resets the circuit breaker to closed state.
+     */
+    private resetCircuit(): void {
+        this.state = CircuitState.Closed;
+        this.failureCount = 0;
+        this.lastFailureTime = undefined;
+        console.info('Circuit breaker RESET to CLOSED state');
+    }
 
-  /**
-   * Gets the current state of the circuit breaker.
-   */
-  public getState(): CircuitState {
-    return this.state;
-  }
+    /**
+     * Gets the current state of the circuit breaker.
+     */
+    public getState(): CircuitState {
+        return this.state;
+    }
 }
