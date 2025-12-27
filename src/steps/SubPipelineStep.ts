@@ -1,6 +1,7 @@
 import { IPipelineStep } from '../contracts/IPipelineStep';
 import { IPipelineContext } from '../contracts/IPipelineContext';
 import { ISubPipeline } from '../contracts/ISubPipeline';
+import { ErrorHandlingUtils } from '../error-handling/ErrorHandlingUtils';
 
 /**
  * Represents a sub-pipeline step in the pipeline that executes a nested pipeline.
@@ -15,9 +16,7 @@ export class SubPipelineStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
    */
   public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
     // Check for cancellation before executing the sub-pipeline
-    if (cancellationToken?.aborted) {
-      throw new Error('Pipeline execution was cancelled');
-    }
+    ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context);
 
     // Execute the sub-pipeline with the same context
     await this.subPipeline.execute(context, cancellationToken);

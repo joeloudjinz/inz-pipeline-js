@@ -1,7 +1,8 @@
 import { IErrorHandlingPolicy } from '../contracts/IErrorHandlingPolicy';
 import { IPipe } from '../contracts/IPipe';
 import { IPipelineContext } from '../contracts/IPipelineContext';
-import { PipelineError } from '../models/PipelineError';
+import { ErrorHandlingUtils } from './ErrorHandlingUtils';
+import { ErrorHandlingConstants } from './ErrorHandlingConstants';
 
 /**
  * Implements a retry policy with configurable attempts and delay.
@@ -41,9 +42,7 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
     while (attempts < this.maxAttempts) {
       try {
         // Check for cancellation before each attempt
-        if (cancellationToken?.aborted) {
-          throw new Error('Pipeline execution was cancelled');
-        }
+        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
 
         await pipe.handle(context, cancellationToken);
         return; // Success, exit the retry loop
@@ -54,12 +53,14 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
         // Check if we should retry this specific error
         if (this.shouldRetry && !this.shouldRetry(lastError)) {
           // Don't retry, re-throw immediately
-          context.hasPipeFailure = true;
-          context.errors.push(lastError.message);
-          context.pipelineErrors.push(new PipelineError(
-            `Pipe failed after ${attempts} attempt(s) - non-retryable exception: ${lastError.message}`,
-            lastError
-          ));
+          const message = ErrorHandlingConstants.NON_RETRYABLE_EXCEPTION.replace('%d', attempts.toString());
+          ErrorHandlingUtils.addErrorToContext(
+            context,
+            lastError,
+            pipe,
+            message,
+            attempts
+          );
           throw lastError;
         }
 
@@ -98,13 +99,15 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
     }
 
     // If we get here, all retry attempts have been exhausted
-    context.hasPipeFailure = true;
-    context.errors.push(lastError?.message || 'Unknown error after retries');
-    context.pipelineErrors.push(new PipelineError(
-      `Pipe failed after ${this.maxAttempts} attempt(s): ${(lastError as Error)?.message}`,
-      lastError
-    ));
-    
+    const message = ErrorHandlingConstants.PIPE_FAILED_AFTER_RETRIES.replace('%d', this.maxAttempts.toString());
+    ErrorHandlingUtils.addErrorToContext(
+      context,
+      lastError || new Error('Unknown error after retries'),
+      pipe,
+      message,
+      attempts
+    );
+
     throw lastError;
   }
 

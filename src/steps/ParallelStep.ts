@@ -2,6 +2,7 @@ import { IPipelineStep } from '../contracts/IPipelineStep';
 import { IPipelineContext } from '../contracts/IPipelineContext';
 import { IPipe } from '../contracts/IPipe';
 import { PipeConfiguration } from '../configuration/PipeConfiguration';
+import { ErrorHandlingUtils } from '../error-handling/ErrorHandlingUtils';
 
 /**
  * Represents a parallel step in the pipeline that executes multiple pipes concurrently.
@@ -27,9 +28,7 @@ export class ParallelStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
    */
   public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
     // Check for cancellation before starting parallel execution
-    if (cancellationToken?.aborted) {
-      throw new Error('Pipeline execution was cancelled');
-    }
+    ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context);
 
     // Create an array of promises for each pipe execution
     const promises = this.pipes.map((pipe, index) => {
@@ -50,19 +49,17 @@ export class ParallelStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
     cancellationToken?: AbortSignal
   ): Promise<void> {
     // Check for cancellation before executing the pipe
-    if (cancellationToken?.aborted) {
-      throw new Error('Pipeline execution was cancelled');
-    }
+    ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
 
     try {
       // If there's an error handling policy, use it to execute the pipe
       if (config.errorHandlingPolicy) {
         await config.errorHandlingPolicy.execute(pipe, context, cancellationToken);
-      } 
+      }
       // If there's a recovery strategy, use it to execute the pipe
       else if (config.recoveryStrategy) {
         await config.recoveryStrategy.execute(pipe, context, cancellationToken);
-      } 
+      }
       // Otherwise, execute the pipe directly
       else {
         await pipe.handle(context, cancellationToken);
@@ -70,14 +67,7 @@ export class ParallelStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
     } catch (error) {
       // If continueOnFailure is enabled, log the error but don't throw
       if (context.continueOnFailure) {
-        context.hasPipeFailure = true;
-        context.errors.push((error as Error).message);
-        context.pipelineErrors.push({
-          message: (error as Error).message,
-          exception: error as Error,
-          timestamp: Date.now(),
-          pipeName: pipe.constructor.name
-        });
+        ErrorHandlingUtils.handleContinueOnFailure(context, error as Error, pipe);
       } else {
         // Otherwise, re-throw the error
         throw error;

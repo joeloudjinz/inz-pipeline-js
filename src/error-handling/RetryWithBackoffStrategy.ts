@@ -1,7 +1,8 @@
 import { IErrorRecoveryStrategy } from '../contracts/IErrorRecoveryStrategy';
 import { IPipe } from '../contracts/IPipe';
 import { IPipelineContext } from '../contracts/IPipelineContext';
-import { PipelineError } from '../models/PipelineError';
+import { ErrorHandlingUtils } from './ErrorHandlingUtils';
+import { ErrorHandlingConstants } from './ErrorHandlingConstants';
 
 /**
  * Implements a retry with backoff strategy for error recovery.
@@ -38,9 +39,7 @@ export class RetryWithBackoffStrategy<TIn, TOut> implements IErrorRecoveryStrate
     while (attempts < this.maxAttempts) {
       try {
         // Check for cancellation before each attempt
-        if (cancellationToken?.aborted) {
-          throw new Error('Pipeline execution was cancelled');
-        }
+        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
 
         await pipe.handle(context, cancellationToken);
         return; // Success, exit the retry loop
@@ -51,12 +50,14 @@ export class RetryWithBackoffStrategy<TIn, TOut> implements IErrorRecoveryStrate
         // Check if we should retry this specific error
         if (this.shouldRetry && !this.shouldRetry(lastError)) {
           // Don't retry, re-throw immediately
-          context.hasPipeFailure = true;
-          context.errors.push(lastError.message);
-          context.pipelineErrors.push(new PipelineError(
-            `Pipe failed after ${attempts} attempt(s) - non-retryable exception: ${lastError.message}`,
-            lastError
-          ));
+          const message = ErrorHandlingConstants.NON_RETRYABLE_EXCEPTION.replace('%d', attempts.toString());
+          ErrorHandlingUtils.addErrorToContext(
+            context,
+            lastError,
+            pipe,
+            message,
+            attempts
+          );
           throw lastError;
         }
 
@@ -89,13 +90,15 @@ export class RetryWithBackoffStrategy<TIn, TOut> implements IErrorRecoveryStrate
     }
 
     // If we get here, all retry attempts have been exhausted
-    context.hasPipeFailure = true;
-    context.errors.push(lastError?.message || 'Unknown error after retries');
-    context.pipelineErrors.push(new PipelineError(
-      `Recovery strategy failed after ${this.maxAttempts} attempt(s): ${(lastError as Error)?.message}`,
-      lastError
-    ));
-    
+    const message = ErrorHandlingConstants.RECOVERY_STRATEGY_FAILED.replace('%d', this.maxAttempts.toString());
+    ErrorHandlingUtils.addErrorToContext(
+      context,
+      lastError || new Error('Unknown error after retries'),
+      pipe,
+      message,
+      attempts
+    );
+
     throw lastError;
   }
 

@@ -28,6 +28,8 @@ export { CircuitBreakerPolicy } from './error-handling/CircuitBreakerPolicy';
 export { FallbackPolicy } from './error-handling/FallbackPolicy';
 export { RetryWithBackoffStrategy } from './error-handling/RetryWithBackoffStrategy';
 export { CircuitBreakerStrategy } from './error-handling/CircuitBreakerStrategy';
+export { ErrorHandlingUtils } from './error-handling/ErrorHandlingUtils';
+export { ErrorHandlingConstants } from './error-handling/ErrorHandlingConstants';
 
 // Configuration
 export { PipeConfiguration } from './configuration/PipeConfiguration';

@@ -1,7 +1,8 @@
 import { IErrorRecoveryStrategy } from '../contracts/IErrorRecoveryStrategy';
 import { IPipe } from '../contracts/IPipe';
 import { IPipelineContext } from '../contracts/IPipelineContext';
-import { PipelineError } from '../models/PipelineError';
+import { ErrorHandlingUtils } from './ErrorHandlingUtils';
+import { ErrorHandlingConstants } from './ErrorHandlingConstants';
 
 /**
  * Represents the state of the circuit breaker strategy.
@@ -19,7 +20,7 @@ export class CircuitBreakerStrategy<TIn, TOut> implements IErrorRecoveryStrategy
   private state: CircuitState = CircuitState.Closed;
   private failureCount: number = 0;
   private lastFailureTime?: number;
-  
+
   private readonly failureThreshold: number;
   private readonly timeout: number;
   private readonly shouldHandle?: (error: Error) => boolean;
@@ -43,21 +44,14 @@ export class CircuitBreakerStrategy<TIn, TOut> implements IErrorRecoveryStrategy
     cancellationToken?: AbortSignal
   ): Promise<void> {
     // Check for cancellation before proceeding
-    if (cancellationToken?.aborted) {
-      throw new Error('Pipeline execution was cancelled');
-    }
+    ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
 
     // Check if circuit is open and timeout has not elapsed
     if (this.state === CircuitState.Open) {
       if (this.lastFailureTime && (Date.now() - this.lastFailureTime) < this.timeout) {
         // Circuit is still open, fail fast
         const error = new Error(`Circuit breaker strategy is OPEN. Request rejected for pipe ${pipe.constructor.name}`);
-        context.hasPipeFailure = true;
-        context.errors.push(error.message);
-        context.pipelineErrors.push(new PipelineError(
-          `Circuit breaker strategy OPEN: ${error.message}`,
-          error
-        ));
+        ErrorHandlingUtils.addErrorToContext(context, error, pipe, ErrorHandlingConstants.CIRCUIT_BREAKER_STRATEGY_OPEN);
         throw error;
       } else {
         // Timeout has elapsed, move to half-open state to test
@@ -68,23 +62,18 @@ export class CircuitBreakerStrategy<TIn, TOut> implements IErrorRecoveryStrategy
     try {
       // Execute the pipe
       await pipe.handle(context, cancellationToken);
-      
+
       // If successful and in half-open state, reset the circuit
       if (this.state === CircuitState.HalfOpen) {
         this.resetCircuit();
       }
     } catch (error) {
       const typedError = error as Error;
-      
+
       // Check if this error should trigger the circuit breaker
       if (this.shouldHandle && !this.shouldHandle(typedError)) {
         // This error should not trigger the circuit breaker, re-throw directly
-        context.hasPipeFailure = true;
-        context.errors.push(typedError.message);
-        context.pipelineErrors.push(new PipelineError(
-          `Non-circuit-breaker error: ${typedError.message}`,
-          typedError
-        ));
+        ErrorHandlingUtils.addErrorToContext(context, typedError, pipe, ErrorHandlingConstants.NON_CIRCUIT_BREAKER_ERROR);
         throw typedError;
       }
 
@@ -98,13 +87,8 @@ export class CircuitBreakerStrategy<TIn, TOut> implements IErrorRecoveryStrategy
       }
 
       // Add error to context
-      context.hasPipeFailure = true;
-      context.errors.push(typedError.message);
-      context.pipelineErrors.push(new PipelineError(
-        `Circuit breaker strategy failure: ${typedError.message}`,
-        typedError
-      ));
-      
+      ErrorHandlingUtils.addErrorToContext(context, typedError, pipe, ErrorHandlingConstants.CIRCUIT_BREAKER_STRATEGY_FAILURE);
+
       throw typedError;
     }
   }

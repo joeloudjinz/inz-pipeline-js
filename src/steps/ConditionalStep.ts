@@ -2,6 +2,7 @@ import { IPipelineStep } from '../contracts/IPipelineStep';
 import { IPipelineContext } from '../contracts/IPipelineContext';
 import { IPipe } from '../contracts/IPipe';
 import { PipeConfiguration } from '../configuration/PipeConfiguration';
+import { ErrorHandlingUtils } from '../error-handling/ErrorHandlingUtils';
 
 /**
  * Represents a conditional step in the pipeline that executes a pipe only if a condition is met.
@@ -19,9 +20,7 @@ export class ConditionalStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
    */
   public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
     // Check for cancellation before evaluating the condition
-    if (cancellationToken?.aborted) {
-      throw new Error('Pipeline execution was cancelled');
-    }
+    ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, this.pipe);
 
     // Check if the condition is met
     if (this.condition(context)) {
@@ -29,11 +28,11 @@ export class ConditionalStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
         // If there's an error handling policy, use it to execute the pipe
         if (this.configuration.errorHandlingPolicy) {
           await this.configuration.errorHandlingPolicy.execute(this.pipe, context, cancellationToken);
-        } 
+        }
         // If there's a recovery strategy, use it to execute the pipe
         else if (this.configuration.recoveryStrategy) {
           await this.configuration.recoveryStrategy.execute(this.pipe, context, cancellationToken);
-        } 
+        }
         // Otherwise, execute the pipe directly
         else {
           await this.pipe.handle(context, cancellationToken);
@@ -41,14 +40,7 @@ export class ConditionalStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
       } catch (error) {
         // If continueOnFailure is enabled, log the error but don't throw
         if (context.continueOnFailure) {
-          context.hasPipeFailure = true;
-          context.errors.push((error as Error).message);
-          context.pipelineErrors.push({
-            message: (error as Error).message,
-            exception: error as Error,
-            timestamp: Date.now(),
-            pipeName: this.pipe.constructor.name
-          });
+          ErrorHandlingUtils.handleContinueOnFailure(context, error as Error, this.pipe);
         } else {
           // Otherwise, re-throw the error
           throw error;
