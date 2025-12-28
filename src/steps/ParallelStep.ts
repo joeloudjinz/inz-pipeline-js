@@ -69,6 +69,8 @@ export class ParallelStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
             if (context.continueOnFailure) {
                 ErrorHandlingUtils.handleContinueOnFailure(context, error as Error, pipe);
             } else {
+                // Set hasPipeFailure to true before re-throwing the error
+                ErrorHandlingUtils.addErrorToContext(context, error as Error, pipe);
                 // Otherwise, re-throw the error
                 throw error;
             }

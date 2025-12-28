@@ -43,6 +43,8 @@ export class ConditionalStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
                 if (context.continueOnFailure) {
                     ErrorHandlingUtils.handleContinueOnFailure(context, error as Error, this.pipe);
                 } else {
+                    // Set hasPipeFailure to true before re-throwing the error
+                    ErrorHandlingUtils.addErrorToContext(context, error as Error, this.pipe);
                     // Otherwise, re-throw the error
                     throw error;
                 }
