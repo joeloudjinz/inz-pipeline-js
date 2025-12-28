@@ -10,7 +10,7 @@ export abstract class BasePipe<TIn, TOut> implements IPipe<TIn, TOut> {
      * Handles the processing of the pipe within the pipeline context.
      * This method performs the specific operation that the pipe is designed for.
      */
-    public abstract handle(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void>;
+    public abstract handle(context: IPipelineContext<TIn, TOut>): Promise<void>;
 
     /**
      * Gets the list of resource keys that this pipe requires to be present in the context

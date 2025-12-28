@@ -15,12 +15,9 @@ export class SubPipelineStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
     /**
      * Executes the sub-pipeline step with the provided context.
      */
-    public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
-        // Check for cancellation before executing the sub-pipeline
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context);
-
+    public async execute(context: IPipelineContext<TIn, TOut>): Promise<void> {
         // Execute the sub-pipeline with the same context
-        await this.subPipeline.execute(context, cancellationToken);
+        await this.subPipeline.execute(context);
     }
 
     /**

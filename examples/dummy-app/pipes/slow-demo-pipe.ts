@@ -4,16 +4,12 @@ import {InputData} from "../models/input.model";
 import {OutputData} from "../models/output.model";
 
 export class SlowDemoPipe extends BasePipe<InputData, OutputData> {
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution(this.constructor.name);
 
-        // Simulate a long-running operation that respects cancellation
+        // Simulate a long-running operation
         for (let i = 0; i < 10; i++) {
-            // Check for cancellation periodically
-            if (cancellationToken?.aborted) {
-                throw new Error("Operation was cancelled");
-            }
-            await this.delay(200, cancellationToken); // Simulate work
+            await this.delay(200); // Simulate work
         }
 
         context.output.property2 += 5; // Add to distinguish from normal pipes
@@ -37,22 +33,11 @@ export class SlowDemoPipe extends BasePipe<InputData, OutputData> {
         console.log(`  [${pipeName}] - Finish execution`);
     }
 
-    private async delay(ms: number, cancellationToken?: AbortSignal): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                if (cancellationToken?.aborted) {
-                    reject(new Error("Operation was cancelled"));
-                } else {
-                    resolve();
-                }
+    private async delay(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
             }, ms);
-
-            if (cancellationToken) {
-                cancellationToken.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error("Operation was cancelled"));
-                });
-            }
         });
     }
 }

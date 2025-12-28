@@ -354,9 +354,9 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
      * Executes the pipeline with the configured context, source data, and pipes.
      * This method will validate the configuration and then execute all attached pipes in the specified order.
      */
-    async flush(cancellationToken?: AbortSignal): Promise<void> {
+    async flush(): Promise<void> {
         await this.validateConfiguration();
-        await this.executeInternal(cancellationToken);
+        await this.executeInternal();
     }
 
     /**
@@ -378,7 +378,7 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
         }
     }
 
-    private async executeInternal(cancellationToken?: AbortSignal): Promise<void> {
+    private async executeInternal(): Promise<void> {
         if (!this.context) {
             throw new Error("Context must be attached before execution");
         }
@@ -428,12 +428,8 @@ export class PipelineBuilder<TIn, TOut> implements IPipelineBuilder<TIn, TOut> {
         this.compiledSteps = this.steps;
 
         for (const step of this.compiledSteps) {
-            if (cancellationToken?.aborted) {
-                throw new Error("Pipeline execution was cancelled");
-            }
-
             const stepStartTime = Date.now();
-            await step.execute(this.context, cancellationToken);
+            await step.execute(this.context);
             const stepEndTime = Date.now();
 
             // Track individual step execution time if performance metrics are enabled

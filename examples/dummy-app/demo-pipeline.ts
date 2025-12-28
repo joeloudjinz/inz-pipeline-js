@@ -28,43 +28,43 @@ export class DemoPipeline {
         Resource7: "keys.resource.7"
     };
 
-    public async run(cancellationToken?: AbortSignal): Promise<void> {
+    public async run(): Promise<void> {
         // pipeline with performance metrics enabled
         console.log("=== Pipeline with Performance Metrics Enabled ===");
-        await this.runPipelineWithMetrics(cancellationToken);
+        await this.runPipelineWithMetrics();
 
         console.log("\n" + '='.repeat(60) + "\n");
 
         // pipeline with performance metrics disabled
         console.log("=== Pipeline with Performance Metrics Disabled ===");
-        await this.runPipelineWithoutMetrics(cancellationToken);
+        await this.runPipelineWithoutMetrics();
 
         console.log("\n" + '='.repeat(60) + "\n");
 
         // pipeline with error handling
         console.log("=== Pipeline with Error Handling Features ===");
-        await this.runPipelineWithErrorHandling(cancellationToken);
+        await this.runPipelineWithErrorHandling();
 
         console.log("\n" + '='.repeat(60) + "\n");
 
         // pipeline with validation features
         console.log("=== Pipeline with Validation Features ===");
-        await this.runPipelineWithValidation(cancellationToken);
+        await this.runPipelineWithValidation();
 
         console.log("\n" + '='.repeat(60) + "\n");
 
         // pipeline with cancellation features
         console.log("=== Pipeline with Cancellation Features ===");
-        await this.runPipelineWithCancellation(cancellationToken);
+        await this.runPipelineWithCancellation();
 
         console.log("\n" + '='.repeat(60) + "\n");
 
         // pipeline with cancellable pipe features
         console.log("=== Pipeline with CancellablePipe Features ===");
-        await this.runPipelineWithCancellablePipe(cancellationToken);
+        await this.runPipelineWithCancellablePipe();
     }
 
-    private async runPipelineWithMetrics(cancellationToken?: AbortSignal): Promise<void> {
+    private async runPipelineWithMetrics(): Promise<void> {
         const builder = new PipelineBuilder<InputData, OutputData>();
         const context = new Context();
         const source = new InputData();
@@ -85,7 +85,7 @@ export class DemoPipeline {
             .attachConditionalPipe(new DemoPipeFour(), () => condition)
             .attachSubPipeline(subPipeline)
             .attachPipe(new DemoPipeSeven())
-            .flush(cancellationToken);
+            .flush();
 
         console.log("Final Output");
         console.log("Property1: " + context.output.property1);
@@ -104,7 +104,7 @@ export class DemoPipeline {
         console.log(`Number of Pipe Executions Tracked: ${Object.keys(context.performanceMetrics?.pipeDurations ?? {}).length}`);
     }
 
-    private async runPipelineWithoutMetrics(cancellationToken?: AbortSignal): Promise<void> {
+    private async runPipelineWithoutMetrics(): Promise<void> {
         const builder = new PipelineBuilder<InputData, OutputData>();
         const context = new Context();
         const source = new InputData();
@@ -124,7 +124,7 @@ export class DemoPipeline {
             .attachConditionalPipe(new DemoPipeFour(), () => condition)
             .attachSubPipeline(subPipeline)
             .attachPipe(new DemoPipeSeven())
-            .flush(cancellationToken);
+            .flush();
 
         console.log("Final Output");
         console.log("Property1: " + context.output.property1);
@@ -138,7 +138,7 @@ export class DemoPipeline {
         console.log("Performance metrics collection was disabled, so no detailed metrics were tracked.");
     }
 
-    private async runPipelineWithErrorHandling(cancellationToken?: AbortSignal): Promise<void> {
+    private async runPipelineWithErrorHandling(): Promise<void> {
         let builder = new PipelineBuilder<InputData, OutputData>();
         let context = new Context();
         const source = new InputData();
@@ -149,7 +149,7 @@ export class DemoPipeline {
             .setSource(source)
             .attachContext(context)
             .attachPipeWithRetryPolicy(new FlakyPipe(), 3, 500)
-            .flush(cancellationToken);
+            .flush();
 
         console.log(`Pipeline completed with output property2: ${context.output.property2}`);
 
@@ -160,7 +160,7 @@ export class DemoPipeline {
             .setSource(source)
             .attachContext(fallbackContext)
             .attachPipeWithFallbackPolicy(new FailingPipe(), new FallbackPipe())
-            .flush(cancellationToken);
+            .flush();
 
         console.log(`Fallback pipeline completed with property1: ${fallbackContext.output.property1}`);
 
@@ -172,7 +172,7 @@ export class DemoPipeline {
                 .setSource(source)
                 .attachContext(circuitBreakerContext)
                 .attachPipeWithCircuitBreakerPolicy(new FailingPipe(), 2, 1000)
-                .flush(cancellationToken);
+                .flush();
         } catch (ex: any) {
             console.log(`Circuit breaker pipeline failed as expected: ${ex.message}`);
         }
@@ -192,7 +192,7 @@ export class DemoPipeline {
             .setSource(source)
             .attachContext(circuitBreakerStrategyContext)
             .attachPipeWithCircuitBreakerStrategy(new SuccessfulRecoveryPipe(), 2, 100)
-            .flush(cancellationToken);
+            .flush();
 
         console.log(`Circuit breaker strategy pipeline completed with property1: ${circuitBreakerStrategyContext.output.property1}`);
 
@@ -203,7 +203,7 @@ export class DemoPipeline {
             .setSource(source)
             .attachContext(retryStrategyContext)
             .attachPipeWithRetryStrategy(new SuccessfulRecoveryPipe(), 3, 100)
-            .flush(cancellationToken);
+            .flush();
 
         console.log(`Retry strategy pipeline completed with property1: ${retryStrategyContext.output.property1}`);
 
@@ -215,12 +215,12 @@ export class DemoPipeline {
             .attachContext(globalStrategyContext)
             .withRecoveryStrategy(new RetryWithBackoffStrategy<InputData, OutputData>(2, 100, 60000))
             .attachPipe(new SuccessfulRecoveryPipe())
-            .flush(cancellationToken);
+            .flush();
 
         console.log(`Global recovery strategy pipeline completed with property1: ${globalStrategyContext.output.property1}`);
     }
 
-    private async runPipelineWithValidation(cancellationToken?: AbortSignal): Promise<void> {
+    private async runPipelineWithValidation(): Promise<void> {
         const builder = new PipelineBuilder<InputData, OutputData>();
         const context = new Context();
         const source = new InputData();
@@ -240,7 +240,7 @@ export class DemoPipeline {
                 console.log(`Validation errors: ${validationResult.errors.join(", ")}`);
             } else {
                 console.log("Validation passed! Executing pipeline...");
-                await builder.flush(cancellationToken);
+                await builder.flush();
                 console.log(`Pipeline executed successfully. Property2: ${context.output.property2}`);
             }
         } catch (ex: any) {
@@ -333,143 +333,60 @@ export class DemoPipeline {
         }
     }
 
-    private async runPipelineWithCancellation(cancellationToken?: AbortSignal): Promise<void> {
-        const controller = new AbortController();
+    private async runPipelineWithCancellation(): Promise<void> {
         const builder = new PipelineBuilder<InputData, OutputData>();
         const context = new Context();
         const source = new InputData();
 
-        console.log("Testing pipeline with cancellation...");
-        console.log("Starting pipeline that will be cancelled after 1 second...");
+        console.log("Testing pipeline without cancellation (cancellation feature removed)...");
+        console.log("Starting pipeline that will run to completion...");
 
-        // Schedule cancellation after 1 second
-        setTimeout(() => {
-            console.log("Cancelling pipeline execution...");
-            controller.abort();
-        }, 1000);
+        await builder
+            .setSource(source)
+            .attachContext(context)
+            .attachPipe(new SlowDemoPipe()) // This pipe has a delay
+            .attachPipe(new DemoPipeOne())
+            .flush();
 
-        try {
-            await builder
-                .setSource(source)
-                .attachContext(context)
-                .attachPipe(new SlowDemoPipe()) // This pipe has a delay to allow for cancellation
-                .attachPipe(new DemoPipeOne()) // This pipe will not execute due to cancellation
-                .flush(controller.signal);
-
-            console.log("Pipeline completed (should not happen with cancellation)");
-        } catch (ex: any) {
-            if (ex.message.includes("cancelled")) {
-                console.log("Pipeline was properly cancelled as expected.");
-            } else {
-                throw ex; // Re-throw if it's not a cancellation error
-            }
-        }
-
-        console.log();
-
-        // Demonstrate cancellation with sub-pipeline
-        console.log("Testing cancellation with sub-pipeline...");
-        const controller2 = new AbortController();
-        const mainBuilder = new PipelineBuilder<InputData, OutputData>();
-        const mainContext = new Context();
-        const mainSource = new InputData();
-
-        const subPipeline = new SubPipeline<InputData, OutputData>((subBuilder) =>
-            subBuilder.attachPipe(new SlowDemoPipe())
-        );
-
-        // Schedule cancellation
-        setTimeout(() => {
-            console.log("Cancelling pipeline with sub-pipeline...");
-            controller2.abort();
-        }, 500);
-
-        try {
-            await mainBuilder
-                .setSource(mainSource)
-                .attachContext(mainContext)
-                .attachSubPipeline(subPipeline)
-                .attachPipe(new DemoPipeOne())
-                .flush(controller2.signal);
-
-            console.log("Pipeline with sub-pipeline completed (should not happen with cancellation)");
-        } catch (ex: any) {
-            if (ex.message.includes("cancelled")) {
-                console.log("Pipeline with sub-pipeline was properly cancelled as expected.");
-            } else {
-                throw ex; // Re-throw if it's not a cancellation error
-            }
-        }
+        console.log("Pipeline completed successfully (cancellation feature has been removed)");
     }
 
-    private async runPipelineWithCancellablePipe(cancellationToken?: AbortSignal): Promise<void> {
-        const controller = new AbortController();
+    private async runPipelineWithCancellablePipe(): Promise<void> {
         const builder = new PipelineBuilder<InputData, OutputData>();
         const context = new Context();
         const source = new InputData();
 
-        console.log("Testing pipeline with cancellable pipe implementation...");
-        console.log("Starting pipeline with a cancellable operation that runs for 5 seconds...");
+        console.log("Testing pipeline with cancellable pipe implementation (cancellation feature removed)...");
+        console.log("Starting pipeline with a cancellable operation that will run to completion...");
 
-        // Schedule cancellation after 2 seconds to cancel the long-running operation
-        setTimeout(() => {
-            console.log("Cancelling pipeline execution (this should trigger HandleCancellation on the cancellable pipe)...");
-            controller.abort();
-        }, 2000);
+        // The cancellable pipe will now run to completion since cancellation is no longer supported
+        await builder
+            .setSource(source)
+            .attachContext(context)
+            .attachPipe(new CancellableOperationPipe("LongRunningOperation", 1000)) // 1-second operation
+            .attachPipe(new DemoPipeOne())
+            .flush();
 
-        try {
-            await builder
-                .setSource(source)
-                .attachContext(context)
-                .attachPipe(new CancellableOperationPipe("LongRunningOperation", 5000)) // 5-second operation
-                .attachPipe(new DemoPipeOne()) // This pipe will not execute due to cancellation
-                .flush(controller.signal);
-
-            console.log("Pipeline completed (should not happen with cancellation)");
-        } catch (ex: any) {
-            if (ex.message.includes("cancelled")) {
-                console.log("Pipeline was properly cancelled as expected.");
-                if (context.output) {
-                    console.log(`Output after cancellation: ${context.output.property1}`);
-                } else {
-                    console.log("Output is null after cancellation");
-                }
-            } else {
-                throw ex; // Re-throw if it's not a cancellation error
-            }
-        }
-
-        // Check if cleanup was performed by the cancellable pipe
-        const cleanupStatusResult = context.tryGetResource<string>("CancellableOperationPipe_LongRunningOperation_cleanup_status");
-        if (cleanupStatusResult.success) {
-            console.log(`Cleanup status: ${cleanupStatusResult.value}`);
-        }
-
-        if (context.output && context.output.property1.includes("cleanup_executed")) {
-            console.log("SUCCESS: HandleCancellation was properly called and executed cleanup logic.");
-        } else {
-            console.log("ISSUE: Cleanup was not executed properly.");
+        console.log("Pipeline completed successfully (cancellation feature has been removed)");
+        if (context.output) {
+            console.log(`Output after execution: ${context.output.property1}`);
         }
 
         console.log();
 
-        // Demonstrate successful completion when no cancellation occurs
-        console.log("Testing successful completion of cancellable pipe without cancellation...");
+        // Demonstrate successful completion
+        console.log("Testing successful completion of cancellable pipe...");
         const builder2 = new PipelineBuilder<InputData, OutputData>();
         const context2 = new Context();
 
-        try {
-            await builder2
-                .setSource(source)
-                .attachContext(context2)
-                .attachPipe(new CancellableOperationPipe("SuccessfulOperation", 500)) // 0.5-second operation
-                .flush(); // No cancellation token
+        await builder2
+            .setSource(source)
+            .attachContext(context2)
+            .attachPipe(new CancellableOperationPipe("SuccessfulOperation", 500)) // 0.5-second operation
+            .flush();
 
-            console.log(`Pipeline completed successfully. Property2: ${context2.output?.property2 ?? 0}`);
-            console.log(`Output string: ${context2.output?.property1 ?? "null"}`);
-        } catch (ex: any) {
-            console.log(`Pipeline with cancellable pipe failed unexpectedly: ${ex.message}`);
-        }
+        console.log(`Pipeline completed successfully. Property2: ${context2.output?.property2 ?? 0}`);
+        console.log(`Output string: ${context2.output?.property1 ?? "null"}`);
     }
 
     private formatBytes(bytes: number): string {

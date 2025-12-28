@@ -40,12 +40,8 @@ export class CircuitBreakerPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn
 
     public async execute(
         pipe: IPipe<TIn, TOut>,
-        context: IPipelineContext<TIn, TOut>,
-        cancellationToken?: AbortSignal
+        context: IPipelineContext<TIn, TOut>
     ): Promise<void> {
-        // Check for cancellation before proceeding
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
-
         // Check if circuit is open and timeout has not elapsed
         if (this.state === CircuitState.Open) {
             if (this.lastFailureTime && (Date.now() - this.lastFailureTime) < this.timeout) {
@@ -61,7 +57,7 @@ export class CircuitBreakerPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn
 
         try {
             // Execute the pipe
-            await pipe.handle(context, cancellationToken);
+            await pipe.handle(context);
 
             // If successful and in half-open state, reset the circuit
             if (this.state === CircuitState.HalfOpen) {

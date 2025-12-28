@@ -22,12 +22,12 @@ export class SubPipeline<TIn, TOut> implements ISubPipeline<TIn, TOut> {
      * The sub-pipeline uses the same context as the parent pipeline, allowing
      * data to be shared between the parent and sub-pipeline operations.
      */
-    public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
+    public async execute(context: IPipelineContext<TIn, TOut>): Promise<void> {
         // Execute the sub-pipeline with the same context and input as the parent
         await this.subPipelineBuilder
             .attachContext(context)
             .setSource(context.input)
-            .flush(cancellationToken);
+            .flush();
     }
 
     /**

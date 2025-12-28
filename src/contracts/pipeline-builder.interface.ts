@@ -156,5 +156,5 @@ export interface IPipelineBuilder<TIn, TOut> {
      * Executes the pipeline with the configured context, source data, and pipes.
      * This method will validate the configuration and then execute all attached pipes in the specified order.
      */
-    flush(cancellationToken?: AbortSignal): Promise<void>;
+    flush(): Promise<void>;
 }

@@ -10,5 +10,5 @@ export interface IErrorRecoveryStrategy<TIn, TOut> {
      * Executes the pipe with the recovery strategy applied.
      * This method wraps the pipe execution with the appropriate recovery logic.
      */
-    execute(pipe: IPipe<TIn, TOut>, context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void>;
+    execute(pipe: IPipe<TIn, TOut>, context: IPipelineContext<TIn, TOut>): Promise<void>;
 }

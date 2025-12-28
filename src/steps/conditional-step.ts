@@ -19,24 +19,21 @@ export class ConditionalStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
      * Executes the conditional step with the provided context.
      * The pipe will only be executed if the condition evaluates to true.
      */
-    public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
-        // Check for cancellation before evaluating the condition
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, this.pipe);
-
+    public async execute(context: IPipelineContext<TIn, TOut>): Promise<void> {
         // Check if the condition is met
         if (this.condition(context)) {
             try {
                 // If there's an error handling policy, use it to execute the pipe
                 if (this.configuration.errorHandlingPolicy) {
-                    await this.configuration.errorHandlingPolicy.execute(this.pipe, context, cancellationToken);
+                    await this.configuration.errorHandlingPolicy.execute(this.pipe, context);
                 }
                 // If there's a recovery strategy, use it to execute the pipe
                 else if (this.configuration.recoveryStrategy) {
-                    await this.configuration.recoveryStrategy.execute(this.pipe, context, cancellationToken);
+                    await this.configuration.recoveryStrategy.execute(this.pipe, context);
                 }
                 // Otherwise, execute the pipe directly
                 else {
-                    await this.pipe.handle(context, cancellationToken);
+                    await this.pipe.handle(context);
                 }
             } catch (error) {
                 // If continueOnFailure is enabled, log the error but don't throw

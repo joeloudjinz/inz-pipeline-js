@@ -26,13 +26,10 @@ export class ParallelStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
      * Executes the parallel step with the provided context.
      * All pipes in the step will be executed concurrently.
      */
-    public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
-        // Check for cancellation before starting parallel execution
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context);
-
+    public async execute(context: IPipelineContext<TIn, TOut>): Promise<void> {
         // Create an array of promises for each pipe execution
         const promises = this.pipes.map((pipe, index) => {
-            return this.executePipe(pipe, this.configurations[index], context, cancellationToken);
+            return this.executePipe(pipe, this.configurations[index], context);
         });
 
         // Execute all pipes in parallel
@@ -52,24 +49,20 @@ export class ParallelStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
     private async executePipe(
         pipe: IPipe<TIn, TOut>,
         config: PipeConfiguration<TIn, TOut>,
-        context: IPipelineContext<TIn, TOut>,
-        cancellationToken?: AbortSignal
+        context: IPipelineContext<TIn, TOut>
     ): Promise<void> {
-        // Check for cancellation before executing the pipe
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
-
         try {
             // If there's an error handling policy, use it to execute the pipe
             if (config.errorHandlingPolicy) {
-                await config.errorHandlingPolicy.execute(pipe, context, cancellationToken);
+                await config.errorHandlingPolicy.execute(pipe, context);
             }
             // If there's a recovery strategy, use it to execute the pipe
             else if (config.recoveryStrategy) {
-                await config.recoveryStrategy.execute(pipe, context, cancellationToken);
+                await config.recoveryStrategy.execute(pipe, context);
             }
             // Otherwise, execute the pipe directly
             else {
-                await pipe.handle(context, cancellationToken);
+                await pipe.handle(context);
             }
         } catch (error) {
             // If continueOnFailure is enabled, log the error but don't throw

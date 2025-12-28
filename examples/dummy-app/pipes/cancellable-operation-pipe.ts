@@ -13,23 +13,15 @@ export class CancellableOperationPipe extends BasePipe<InputData, OutputData> {
         this.duration = duration;
     }
 
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution(this.constructor.name);
 
-        // Simulate a long-running operation that can be cancelled
+        // Simulate a long-running operation
         const startTime = Date.now();
         let elapsed = 0;
 
         while (elapsed < this.duration) {
-            // Check for cancellation periodically
-            if (cancellationToken?.aborted) {
-                // Perform cleanup when cancelled
-                context.output.property1 = "Operation cancelled with cleanup_executed";
-                context.addResource(`CancellableOperationPipe_${this.operationName}_cleanup_status`, "cleanup_performed");
-                throw new Error("Operation was cancelled");
-            }
-
-            await this.delay(100); // Small delay to allow checking for cancellation
+            await this.delay(100); // Small delay
             elapsed = Date.now() - startTime;
         }
 

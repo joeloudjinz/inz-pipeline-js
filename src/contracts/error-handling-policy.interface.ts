@@ -10,5 +10,5 @@ export interface IErrorHandlingPolicy<TIn, TOut> {
      * Executes the pipe with the error handling policy applied.
      * This method wraps the pipe execution with the appropriate error handling logic.
      */
-    execute(pipe: IPipe<TIn, TOut>, context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void>;
+    execute(pipe: IPipe<TIn, TOut>, context: IPipelineContext<TIn, TOut>): Promise<void>;
 }

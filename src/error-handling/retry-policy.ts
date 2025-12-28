@@ -9,7 +9,7 @@ import {ErrorHandlingConstants} from './error-handling-constants';
  */
 export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
     private readonly maxAttempts: number;
-    private readonly delay: number;
+    private readonly baseDelay: number;
     private readonly maxDelay: number;
     private readonly useExponentialBackoff: boolean;
     private readonly shouldRetry?: (error: Error) => boolean;
@@ -19,13 +19,13 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
      */
     constructor(
         maxAttempts: number = 3,
-        delay: number = 1000, // 1 second default
+        baseDelay: number = 1000, // 1 second default
         maxDelay: number = 60000, // 1 minute default
         useExponentialBackoff: boolean = false,
         shouldRetry?: (error: Error) => boolean
     ) {
         this.maxAttempts = maxAttempts > 0 ? maxAttempts : 1;
-        this.delay = delay > 0 ? delay : 1000;
+        this.baseDelay = baseDelay > 0 ? baseDelay : 1000;
         this.maxDelay = maxDelay > 0 ? maxDelay : 60000;
         this.useExponentialBackoff = useExponentialBackoff;
         this.shouldRetry = shouldRetry;
@@ -33,18 +33,14 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
 
     public async execute(
         pipe: IPipe<TIn, TOut>,
-        context: IPipelineContext<TIn, TOut>,
-        cancellationToken?: AbortSignal
+        context: IPipelineContext<TIn, TOut>
     ): Promise<void> {
         let attempts = 0;
         let lastError: Error | undefined;
 
         while (attempts < this.maxAttempts) {
             try {
-                // Check for cancellation before each attempt
-                ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
-
-                await pipe.handle(context, cancellationToken);
+                await pipe.handle(context);
                 return; // Success, exit the retry loop
             } catch (error) {
                 lastError = error as Error;
@@ -70,11 +66,11 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
                 }
 
                 // Calculate delay for this attempt
-                let currentDelay = this.delay;
+                let currentDelay = this.baseDelay;
                 if (this.useExponentialBackoff) {
-                    // Exponential backoff: delay * (2 ^ attempt number)
+                    // Exponential backoff: baseDelay * (2 ^ attempt number)
                     const exponentialFactor = Math.pow(2, attempts - 1);
-                    currentDelay = this.delay * exponentialFactor;
+                    currentDelay = this.baseDelay * exponentialFactor;
 
                     // Cap the delay at the maximum allowed
                     if (currentDelay > this.maxDelay) {
@@ -88,13 +84,8 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
                     lastError
                 );
 
-                // Add a delay before retry, but also check for cancellation during the delay
-                try {
-                    await this.delayWithCancellation(currentDelay, cancellationToken);
-                } catch (cancelError) {
-                    // If cancellation occurred during the delay, re-throw
-                    throw cancelError;
-                }
+                // Add a delay before retry
+                await this.delay(currentDelay);
             }
         }
 
@@ -112,20 +103,13 @@ export class RetryPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut> {
     }
 
     /**
-     * Creates a delay that can be interrupted by a cancellation token.
+     * Creates a standard delay.
      */
-    private async delayWithCancellation(delay: number, cancellationToken?: AbortSignal): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
+    private async delay(delay: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
                 resolve();
             }, delay);
-
-            if (cancellationToken) {
-                cancellationToken.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error('Pipeline execution was cancelled during retry delay'));
-                });
-            }
         });
     }
 }

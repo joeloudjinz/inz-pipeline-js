@@ -24,15 +24,11 @@ export class FallbackPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut
 
     public async execute(
         pipe: IPipe<TIn, TOut>,
-        context: IPipelineContext<TIn, TOut>,
-        cancellationToken?: AbortSignal
+        context: IPipelineContext<TIn, TOut>
     ): Promise<void> {
-        // Check for cancellation before proceeding
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, pipe);
-
         try {
             // Try to execute the primary pipe
-            await pipe.handle(context, cancellationToken);
+            await pipe.handle(context);
         } catch (primaryError) {
             const typedPrimaryError = primaryError as Error;
 
@@ -47,7 +43,7 @@ export class FallbackPolicy<TIn, TOut> implements IErrorHandlingPolicy<TIn, TOut
 
             try {
                 // Execute the fallback pipe
-                await this.fallbackPipe.handle(context, cancellationToken);
+                await this.fallbackPipe.handle(context);
 
                 // Log that fallback was successful
                 console.info('Fallback pipe executed successfully');

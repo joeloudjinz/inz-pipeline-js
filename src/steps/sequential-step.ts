@@ -17,22 +17,19 @@ export class SequentialStep<TIn, TOut> implements IPipelineStep<TIn, TOut> {
     /**
      * Executes the sequential step with the provided context.
      */
-    public async execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void> {
-        // Check for cancellation before executing the pipe
-        ErrorHandlingUtils.checkAndHandleCancellation(cancellationToken, context, this.pipe);
-
+    public async execute(context: IPipelineContext<TIn, TOut>): Promise<void> {
         try {
             // If there's an error handling policy, use it to execute the pipe
             if (this.configuration.errorHandlingPolicy) {
-                await this.configuration.errorHandlingPolicy.execute(this.pipe, context, cancellationToken);
+                await this.configuration.errorHandlingPolicy.execute(this.pipe, context);
             }
             // If there's a recovery strategy, use it to execute the pipe
             else if (this.configuration.recoveryStrategy) {
-                await this.configuration.recoveryStrategy.execute(this.pipe, context, cancellationToken);
+                await this.configuration.recoveryStrategy.execute(this.pipe, context);
             }
             // Otherwise, execute the pipe directly
             else {
-                await this.pipe.handle(context, cancellationToken);
+                await this.pipe.handle(context);
             }
         } catch (error) {
             // If continueOnFailure is enabled, log the error but don't throw

@@ -8,7 +8,7 @@ export class FlakyPipe extends BasePipe<InputData, OutputData> {
 
     // private readonly lock = {};
 
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution(this.constructor.name);
 
         // In TypeScript, we don't have the same locking mechanism as C#, so we'll just increment directly
@@ -24,7 +24,7 @@ export class FlakyPipe extends BasePipe<InputData, OutputData> {
         // Ensure the output exists before modifying it
         if (!context.output) context.output = new OutputData();
         context.output.property2 += 10; // Add 10 to distinguish from normal pipes
-        await this.delay(100, cancellationToken);
+        await this.delay(100);
         this.consolePrintPipeFinishExecution(this.constructor.name);
     }
 
@@ -44,22 +44,11 @@ export class FlakyPipe extends BasePipe<InputData, OutputData> {
         console.log(`  [${pipeName}] - Finish execution`);
     }
 
-    private async delay(ms: number, cancellationToken?: AbortSignal): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                if (cancellationToken?.aborted) {
-                    reject(new Error("Operation was cancelled"));
-                } else {
-                    resolve();
-                }
+    private async delay(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
             }, ms);
-
-            if (cancellationToken) {
-                cancellationToken.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error("Operation was cancelled"));
-                });
-            }
         });
     }
 }

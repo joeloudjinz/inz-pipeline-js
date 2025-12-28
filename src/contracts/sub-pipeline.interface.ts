@@ -12,7 +12,7 @@ export interface ISubPipeline<TIn, TOut> {
      * The sub-pipeline uses the same context as the parent pipeline, allowing
      * data to be shared between the parent and sub-pipeline operations.
      */
-    execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void>;
+    execute(context: IPipelineContext<TIn, TOut>): Promise<void>;
 
     /**
      * Gets the pipes that are part of this sub-pipeline for validation purposes.

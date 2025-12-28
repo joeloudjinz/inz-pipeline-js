@@ -65,20 +65,4 @@ export class ErrorHandlingUtils {
         ErrorHandlingUtils.addErrorToContext(context, cancellationError, pipe);
         throw cancellationError;
     }
-
-    /**
-     * Standardized method to check for cancellation and throw if cancelled.
-     * @param cancellationToken The cancellation token
-     * @param context The pipeline context
-     * @param pipe The pipe where the check is happening
-     */
-    public static checkAndHandleCancellation<TIn, TOut>(
-        cancellationToken: AbortSignal | undefined,
-        context: IPipelineContext<TIn, TOut>,
-        pipe?: IPipe<TIn, TOut>
-    ): void {
-        if (cancellationToken?.aborted) {
-            ErrorHandlingUtils.handleCancellation(context, pipe);
-        }
-    }
 }

@@ -3,11 +3,11 @@ import {InputData} from "../models/input.model";
 import {OutputData} from "../models/output.model";
 
 export class FallbackPipe extends BasePipe<InputData, OutputData> {
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution("FallbackPipe");
         if (!context.output) context.output = new OutputData();
         context.output.property1 = "Fallback executed successfully";
-        await this.delay(100, cancellationToken);
+        await this.delay(100);
         this.consolePrintPipeFinishExecution("FallbackPipe");
     }
 
@@ -27,22 +27,11 @@ export class FallbackPipe extends BasePipe<InputData, OutputData> {
         console.log(`  [${pipeName}] - Finish execution`);
     }
 
-    private async delay(ms: number, cancellationToken?: AbortSignal): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                if (cancellationToken?.aborted) {
-                    reject(new Error("Operation was cancelled"));
-                } else {
-                    resolve();
-                }
+    private async delay(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
             }, ms);
-
-            if (cancellationToken) {
-                cancellationToken.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error("Operation was cancelled"));
-                });
-            }
         });
     }
 }

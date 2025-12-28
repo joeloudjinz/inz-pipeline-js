@@ -10,7 +10,7 @@ export interface IPipelineStep<TIn, TOut> {
     /**
      * Executes the pipeline step with the provided context.
      */
-    execute(context: IPipelineContext<TIn, TOut>, cancellationToken?: AbortSignal): Promise<void>;
+    execute(context: IPipelineContext<TIn, TOut>): Promise<void>;
 
     /**
      * Gets the pipes that are part of this step for validation purposes.

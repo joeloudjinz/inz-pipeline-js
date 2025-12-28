@@ -4,12 +4,12 @@ import {OutputData} from "../models/output.model";
 import {DemoPipeline} from "../demo-pipeline";
 
 export class DemoPipeSix extends BasePipe<InputData, OutputData> {
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution(this.constructor.name);
         context.output.property2++;
         context.output.property4 = [...context.output.property4, "Data 3"];
         context.addResource(DemoPipeline.ResourceKeys.Resource6, 6);
-        await this.delay(200, cancellationToken);
+        await this.delay(200);
         this.consolePrintPipeFinishExecution(this.constructor.name);
     }
 
@@ -29,22 +29,11 @@ export class DemoPipeSix extends BasePipe<InputData, OutputData> {
         console.log(`  [${pipeName}] - Finish execution`);
     }
 
-    private async delay(ms: number, cancellationToken?: AbortSignal): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                if (cancellationToken?.aborted) {
-                    reject(new Error("Operation was cancelled"));
-                } else {
-                    resolve();
-                }
+    private async delay(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
             }, ms);
-
-            if (cancellationToken) {
-                cancellationToken.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error("Operation was cancelled"));
-                });
-            }
         });
     }
 }

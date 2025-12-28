@@ -6,7 +6,7 @@ import {OutputData} from "../models/output.model";
 export class SuccessfulRecoveryPipe extends BasePipe<InputData, OutputData> {
     private executionCount = 0;
 
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution(this.constructor.name);
 
         this.executionCount++;
@@ -21,7 +21,7 @@ export class SuccessfulRecoveryPipe extends BasePipe<InputData, OutputData> {
         // Ensure the output exists before modifying it
         if (!context.output) context.output = new OutputData();
         context.output.property1 = "Recovery was successful";
-        await this.delay(100, cancellationToken);
+        await this.delay(100);
         this.consolePrintPipeFinishExecution(this.constructor.name);
     }
 
@@ -41,22 +41,11 @@ export class SuccessfulRecoveryPipe extends BasePipe<InputData, OutputData> {
         console.log(`  [${pipeName}] - Finish execution`);
     }
 
-    private async delay(ms: number, cancellationToken?: AbortSignal): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                if (cancellationToken?.aborted) {
-                    reject(new Error("Operation was cancelled"));
-                } else {
-                    resolve();
-                }
+    private async delay(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
             }, ms);
-
-            if (cancellationToken) {
-                cancellationToken.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error("Operation was cancelled"));
-                });
-            }
         });
     }
 }

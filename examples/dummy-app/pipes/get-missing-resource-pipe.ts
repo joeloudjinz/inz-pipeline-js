@@ -4,7 +4,7 @@ import {InputData} from "../models/input.model";
 import {OutputData} from "../models/output.model";
 
 export class GetMissingResourcePipe extends BasePipe<InputData, OutputData> {
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         this.consolePrintPipeStartExecution(this.constructor.name);
 
         // This will fail at runtime, but validation should catch it
