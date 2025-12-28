@@ -1,17 +1,20 @@
-# @inz/pipeline
+# inz-pipeline-js
 
 A TypeScript pipeline library for processing data through configurable steps, inspired by
 the [InzPipeline](https://github.com/joeloudjinz/InzPipeline) .NET library.
 
-## Installation
-
-```bash
-npm install @inz/pipeline
-```
+## Table of Contents
+- [Overview](#overview)
+- [Basic Usage](#basic-usage)
+- [Creating Pipes](#creating-pipes)
+- [Advanced Features](#advanced-features)
+- [API Reference](#api-reference)
+- [Running the Example App](#running-the-example-app)
+- [Running the Tests](#running-the-tests)
 
 ## Overview
 
-The @inz/pipeline library provides a fluent API for building data processing pipelines with support for:
+The inz-pipeline-js library provides a fluent API for building data processing pipelines with support for:
 
 - Sequential execution of operations
 - Parallel execution of operations
@@ -22,13 +25,12 @@ The @inz/pipeline library provides a fluent API for building data processing pip
 - Performance metrics tracking with detailed timing and memory usage
 - Resource management with key-value store
 - Pipeline validation to ensure proper resource dependencies
-- Cancellation support using AbortSignal
 - Type safety with generic types throughout
 
 ## Basic Usage
 
 ```typescript
-import {PipelineBuilder, PipelineContext, BasePipe} from '@inz/pipeline';
+import {PipelineBuilder, PipelineContext, BasePipe} from 'inz-pipeline-js';
 
 // Define your input and output types
 interface InputData {
@@ -57,12 +59,7 @@ class MultiplyPipe extends BasePipe<InputData, OutputData> {
         this.factor = factor;
     }
 
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
-        // Check for cancellation
-        if (cancellationToken?.aborted) {
-            throw new Error('Operation was cancelled');
-        }
-
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         // Perform your operation here
         context.output.result = context.input.value * this.factor;
     }
@@ -91,22 +88,12 @@ async function runPipeline() {
 To create a pipe, extend the `BasePipe<TIn, TOut>` class:
 
 ```typescript
-import {BasePipe, IPipelineContext} from '@inz/pipeline';
+import {BasePipe, IPipelineContext} from 'inz-pipeline-js';
 
 class MyPipe extends BasePipe<InputData, OutputData> {
-    async handle(context: IPipelineContext<InputData, OutputData>, cancellationToken?: AbortSignal): Promise<void> {
-        // Check for cancellation
-        if (cancellationToken?.aborted) {
-            throw new Error('Operation was cancelled');
-        }
-
+    async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
         // Perform your operation here
         context.output.result = context.input.value * 2;
-
-        // Check for cancellation again after async work
-        if (cancellationToken?.aborted) {
-            throw new Error('Operation was cancelled');
-        }
     }
 
     // Optional: Define required resources for validation
@@ -126,7 +113,7 @@ class MyPipe extends BasePipe<InputData, OutputData> {
 ### Sub-Pipelines
 
 ```typescript
-import {SubPipeline} from '@inz/pipeline';
+import {SubPipeline} from 'inz-pipeline-js';
 
 const subPipeline = new SubPipeline<InputData, OutputData>((subBuilder) => {
     subBuilder
@@ -255,12 +242,7 @@ console.log(context.getPerformanceMetricsSummary());
 
 ```typescript
 // In your pipe implementation
-async
-handle(context
-:
-IPipelineContext<InputData, OutputData>
-):
-Promise < void > {
+async handle(context: IPipelineContext<InputData, OutputData>): Promise<void> {
     // Add a resource to the context
     context.addResource('my-resource-key', {some: 'data'});
 
@@ -275,7 +257,7 @@ Promise < void > {
 ### Pipeline Validation
 
 ```typescript
-import {DefaultPipelineValidator} from '@inz/pipeline';
+import {DefaultPipelineValidator} from 'inz-pipeline-js';
 
 await builder
     .setSource(source)
@@ -283,25 +265,6 @@ await builder
     .attachValidator(new DefaultPipelineValidator<InputData, OutputData>())
     .attachPipe(new MyPipe())
     .flush();
-```
-
-### Cancellation Support
-
-```typescript
-const controller = new AbortController();
-
-// Cancel after 5 seconds
-setTimeout(() => controller.abort(), 5000);
-
-try {
-    await builder
-        .setSource(source)
-        .attachContext(context)
-        .attachPipe(new SlowPipe())
-        .flush(controller.signal);
-} catch (error) {
-    console.log('Pipeline was cancelled or failed:', error);
-}
 ```
 
 ## API Reference
@@ -333,7 +296,6 @@ Abstract base class for all pipe implementations that provides:
 
 - Required and provided resource tracking
 - Async handle method that all pipes must implement
-- Cancellation support via AbortSignal
 
 ### SubPipeline<TIn, TOut>
 
@@ -384,10 +346,74 @@ Executes a nested pipeline within the main pipeline, sharing the same context.
 - **MemoryMetricsModel**: Memory usage tracking (initial, final, peak, allocated)
 - **PipelineErrorModel**: Detailed error representation with timestamps and pipe names
 
-## Contributing
 
-We welcome contributions! Please see our contributing guidelines for more information.
+## Running the Example App
 
-## License
+The example app demonstrates various features of the library. To run it:
 
-MIT
+1. Navigate to the project root directory:
+   ```bash
+   cd /path/to/inz-pipeline-js
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Build the project:
+   ```bash
+   npm run build
+   ```
+
+4. Run the example app:
+   ```bash
+   npm run example:dummy-app
+   ```
+
+The example app will demonstrate:
+- Pipeline with performance metrics enabled
+- Pipeline with performance metrics disabled
+- Pipeline with error handling features
+- Pipeline with validation features
+- Pipeline with cancellation features
+- Pipeline with cancellable pipe features
+
+## Running the Tests
+
+The project includes comprehensive unit and integration tests. To run them:
+
+1. Navigate to the project root directory:
+   ```bash
+   cd /path/to/inz-pipeline-js
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Run all tests:
+   ```bash
+   npm test
+   ```
+
+4. Run tests in watch mode:
+   ```bash
+   npm run test:watch
+   ```
+
+5. Run specific test files:
+   ```bash
+   npm run test -- test/unit-tests/pipeline-builder-basic-setup.test.ts
+   ```
+
+The test suite includes:
+- Unit tests for individual components
+- Integration tests for complex pipeline scenarios
+- Error handling tests
+- Performance metrics tests
+- Resource management tests
+- Sub-pipeline integration tests
+- Parallel and conditional execution tests
+- Real-world usage scenario tests
