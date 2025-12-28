@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../dist-examples",
+    "declarationDir": "../dist-examples/types",
+    "composite": true
+  },
+  "include": [
+    "dummy-app/**/*",
+    "../src/**/*"
+  ],
+  "exclude": [
+    "../node_modules",
+    "../dist",
+    "../dist-test"
+  ]
+}
