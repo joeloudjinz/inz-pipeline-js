@@ -1,8 +1,8 @@
 /**
  * Simple test to verify Jest configuration works properly
  */
-import {PipelineBuilder} from '../../src/PipelineBuilder';
-import {TestInput, TestOutput, TestContext, TestPipe} from '../TestUtilities';
+import {PipelineBuilder} from '../../src';
+import {TestContext, TestInput, TestOutput, TestPipe} from '../test-utilities';
 
 describe('Jest Configuration Test', () => {
     it('should execute a simple pipeline', async () => {

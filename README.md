@@ -380,9 +380,9 @@ Executes a nested pipeline within the main pipeline, sharing the same context.
 
 ### Data Models
 
-- **PerformanceMetrics**: Execution timing, memory usage, and custom metrics
-- **MemoryMetrics**: Memory usage tracking (initial, final, peak, allocated)
-- **PipelineError**: Detailed error representation with timestamps and pipe names
+- **PerformanceMetricsModel**: Execution timing, memory usage, and custom metrics
+- **MemoryMetricsModel**: Memory usage tracking (initial, final, peak, allocated)
+- **PipelineErrorModel**: Detailed error representation with timestamps and pipe names
 
 ## Contributing
 
