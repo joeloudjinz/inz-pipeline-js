@@ -11,7 +11,9 @@
     "build:test": "tsc -p tsconfig.test.json",
     "lint": "eslint src/**/*.ts",
     "prebuild": "rm -rf dist",
-    "test-build": "npx ts-node test-build.ts"
+    "test-build": "npx ts-node test-build.ts",
+    "build:examples": "tsc -p examples/tsconfig.json",
+    "example:dummy-app": "npx ts-node examples/dummy-app/dummy-app.ts"
   },
   "keywords": [
     "pipeline",

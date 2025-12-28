@@ -174,3 +174,5 @@ yarn.lock          # Uncomment if you don't want to track this
 *.tsx.map
 
 package-lock.json
+
+dist-examples/
